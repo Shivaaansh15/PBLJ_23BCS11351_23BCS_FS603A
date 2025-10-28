@@ -1,0 +1,272 @@
+# Create a single text file that contains the complete combined project code (HTML, JSP, Java Servlets, web.xml)
+project_content = """🌐 Combined Project: Web Applications Using Servlets, JSP & JDBC
+
+----------------------------------------------------------
+🗂️ Folder Structure
+----------------------------------------------------------
+WebApp/
+│
+├── WebContent/
+│   ├── login.html
+│   ├── attendance.jsp
+│   ├── WEB-INF/
+│   │   └── web.xml
+│
+└── src/
+    ├── LoginServlet.java
+    ├── EmployeeServlet.java
+    └── AttendanceServlet.java
+
+----------------------------------------------------------
+🧱 Database Setup
+----------------------------------------------------------
+
+-- For Employee:
+CREATE DATABASE company;
+USE company;
+
+CREATE TABLE Employee (
+    EmpID INT PRIMARY KEY,
+    Name VARCHAR(50),
+    Salary DOUBLE
+);
+
+INSERT INTO Employee VALUES
+(101, 'Amit Sharma', 45000),
+(102, 'Neha Verma', 50000),
+(103, 'Rohit Mehra', 55000);
+
+-- For Attendance:
+CREATE DATABASE school;
+USE school;
+
+CREATE TABLE Attendance (
+    StudentID INT,
+    Date DATE,
+    Status VARCHAR(10)
+);
+
+----------------------------------------------------------
+💻 Code (All in One)
+----------------------------------------------------------
+
+(1) login.html
+----------------------------------------------------------
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Login</title>
+</head>
+<body style="font-family: Arial; margin: 40px;">
+    <h2>User Login</h2>
+    <form action="LoginServlet" method="post">
+        <label>Username:</label>
+        <input type="text" name="username" required><br><br>
+
+        <label>Password:</label>
+        <input type="password" name="password" required><br><br>
+
+        <input type="submit" value="Login">
+    </form>
+
+    <hr>
+    <h3>Other Features:</h3>
+    <ul>
+        <li><a href="EmployeeServlet">View Employee Records</a></li>
+        <li><a href="attendance.jsp">Student Attendance Portal</a></li>
+    </ul>
+</body>
+</html>
+
+----------------------------------------------------------
+(2) attendance.jsp
+----------------------------------------------------------
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Attendance Portal</title>
+</head>
+<body style="font-family: Arial; margin: 40px;">
+    <h2>Mark Attendance</h2>
+    <form action="AttendanceServlet" method="post">
+        <label>Student ID:</label>
+        <input type="text" name="studentId" required><br><br>
+
+        <label>Date:</label>
+        <input type="date" name="date" required><br><br>
+
+        <label>Status:</label>
+        <select name="status">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+        </select><br><br>
+
+        <input type="submit" value="Submit Attendance">
+    </form>
+</body>
+</html>
+
+----------------------------------------------------------
+(3) LoginServlet.java
+----------------------------------------------------------
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class LoginServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+
+        if ("admin".equals(username) && "1234".equals(password)) {
+            out.println("<h2>Welcome, " + username + "!</h2>");
+            out.println("<p>Login successful.</p>");
+        } else {
+            out.println("<h3>Invalid username or password. Please try again.</h3>");
+        }
+    }
+}
+
+----------------------------------------------------------
+(4) EmployeeServlet.java
+----------------------------------------------------------
+import java.io.*;
+import java.sql.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class EmployeeServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+        String empId = request.getParameter("empId");
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/company", "root", "yourpassword");
+            Statement stmt = con.createStatement();
+            ResultSet rs;
+
+            if (empId == null || empId.isEmpty()) {
+                rs = stmt.executeQuery("SELECT * FROM Employee");
+                out.println("<h2>Employee List</h2>");
+            } else {
+                rs = stmt.executeQuery("SELECT * FROM Employee WHERE EmpID=" + empId);
+                out.println("<h2>Search Result for Employee ID: " + empId + "</h2>");
+            }
+
+            out.println("<table border='1'><tr><th>EmpID</th><th>Name</th><th>Salary</th></tr>");
+            while (rs.next()) {
+                out.println("<tr><td>" + rs.getInt("EmpID") + "</td><td>" +
+                            rs.getString("Name") + "</td><td>" +
+                            rs.getDouble("Salary") + "</td></tr>");
+            }
+            out.println("</table>");
+            con.close();
+        } catch (Exception e) {
+            out.println("<h3>Error: " + e.getMessage() + "</h3>");
+        }
+
+        out.println("<br><form action='EmployeeServlet' method='get'>");
+        out.println("Search by Employee ID: <input type='text' name='empId'>");
+        out.println("<input type='submit' value='Search'>");
+        out.println("</form>");
+    }
+}
+
+----------------------------------------------------------
+(5) AttendanceServlet.java
+----------------------------------------------------------
+import java.io.*;
+import java.sql.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+
+public class AttendanceServlet extends HttpServlet {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String studentId = request.getParameter("studentId");
+        String date = request.getParameter("date");
+        String status = request.getParameter("status");
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/school", "root", "yourpassword");
+            PreparedStatement ps = con.prepareStatement("INSERT INTO Attendance VALUES (?, ?, ?)");
+            ps.setInt(1, Integer.parseInt(studentId));
+            ps.setString(2, date);
+            ps.setString(3, status);
+
+            int i = ps.executeUpdate();
+            if (i > 0) {
+                out.println("<h3>Attendance marked successfully!</h3>");
+            } else {
+                out.println("<h3>Failed to mark attendance.</h3>");
+            }
+            con.close();
+        } catch (Exception e) {
+            out.println("<h3>Error: " + e.getMessage() + "</h3>");
+        }
+    }
+}
+
+----------------------------------------------------------
+(6) web.xml
+----------------------------------------------------------
+<web-app>
+    <servlet>
+        <servlet-name>LoginServlet</servlet-name>
+        <servlet-class>LoginServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LoginServlet</servlet-name>
+        <url-pattern>/LoginServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>EmployeeServlet</servlet-name>
+        <servlet-class>EmployeeServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>EmployeeServlet</servlet-name>
+        <url-pattern>/EmployeeServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>AttendanceServlet</servlet-name>
+        <servlet-class>AttendanceServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AttendanceServlet</servlet-name>
+        <url-pattern>/AttendanceServlet</url-pattern>
+    </servlet-mapping>
+</web-app>
+
+----------------------------------------------------------
+✅ Concepts Demonstrated
+----------------------------------------------------------
+1️⃣ Handling user input using HTML + Servlets  
+2️⃣ JDBC integration with Servlets  
+3️⃣ JSP as frontend + Servlet as backend  
+4️⃣ MVC Architecture demonstration  
+5️⃣ Dynamic content generation and database handling
+"""
+
+# Save to file
+file_path = "/mnt/data/Combined_Servlet_JSP_Project.txt"
+with open(file_path, "w", encoding="utf-8") as f:
+    f.write(project_content)
+
+file_path
